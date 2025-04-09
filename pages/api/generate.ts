@@ -26,8 +26,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           height: 512,
           num_outputs: 1,
         },
-        webhook: `${process.env.VERCEL_URL}/api/webhook`,
-        webhook_events_filter: ["completed"]
       }),
     });
 
@@ -37,8 +35,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw new Error(prediction.error);
     }
 
-    // ✅ Respond immediately with the prediction ID
-    res.status(200).json({ id: prediction.id });
+    // Server-side polling
+    let imageUrl = null;
+    let tries = 0;
+
+    while (!imageUrl && tries < 20) {
+      const statusRes = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
+        headers: {
+          "Authorization": `Token ${process.env.REPLICATE_API_TOKEN}`,
+        },
+      });
+
+      const status = await statusRes.json();
+
+      if (status.status === "succeeded") {
+        imageUrl = status.output[0];
+        break;
+      } else if (status.status === "failed") {
+        throw new Error("Prediction failed.");
+      }
+
+      await new Promise((r) => setTimeout(r, 1000)); // Wait 1s
+      tries++;
+    }
+
+    if (imageUrl) {
+      res.status(200).json({ imageUrl });
+    } else {
+      res.status(504).json({ message: "Timed out waiting for image generation." });
+    }
   } catch (err: any) {
     res.status(500).json({ message: err.message || "Something went wrong" });
   }

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 export default function Home() {
@@ -8,34 +7,34 @@ export default function Home() {
 
   const handleGenerate = async () => {
     if (prompt.trim().length < 5) {
-      alert("Please enter a more detailed prompt (at least 5 characters).");
+      alert("Please enter a more detailed prompt.");
       return;
     }
-  
+
     setLoading(true);
-  
+    setImageUrl("");
+
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
       });
-  
+
       const data = await res.json();
-  
+
       if (!res.ok) {
-        throw new Error(data.message || "Something went wrong");
+        throw new Error(data.message || "Something went wrong.");
       }
-  
+
       setImageUrl(data.imageUrl);
-    } catch (err) {
-      console.error("Error generating image:", err.message);
-      alert("Failed to generate image: " + err.message);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to generate image.");
     } finally {
       setLoading(false);
     }
   };
-  
 
   return (
     <div className="min-h-screen p-8 bg-gray-100">
