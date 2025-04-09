@@ -7,16 +7,35 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
+    if (prompt.trim().length < 5) {
+      alert("Please enter a more detailed prompt (at least 5 characters).");
+      return;
+    }
+  
     setLoading(true);
-    const res = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
-    });
-    const data = await res.json();
-    setImageUrl(data.imageUrl);
-    setLoading(false);
+  
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+  
+      const data = await res.json();
+  
+      if (!res.ok) {
+        throw new Error(data.message || "Something went wrong");
+      }
+  
+      setImageUrl(data.imageUrl);
+    } catch (err) {
+      console.error("Error generating image:", err.message);
+      alert("Failed to generate image: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+  
 
   return (
     <div className="min-h-screen p-8 bg-gray-100">
